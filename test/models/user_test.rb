@@ -3,7 +3,7 @@ require 'test_helper'
 class UserTest < ActiveSupport::TestCase
 
   def setup
-    @user = User.new(name: "Example User", email: "user@example.com",
+    @user = User.new(name: "ExampleUser", email: "user@example.com",
                      password: "foobar", password_confirmation: "foobar")
   end
 
@@ -49,8 +49,30 @@ class UserTest < ActiveSupport::TestCase
     end
   end
   
+  test "name validation should reject invalid name" do
+    invalid_names = %w[example@name @name ]
+    invalid_names.each do |invalid_name|
+      @user.name = invalid_name
+      assert_not @user.valid?, "#{invalid_name.inspect} should be invalid"
+    end
+    
+      @user.name = "example Name"
+      assert_not @user.valid?, "example Name should be invalid"
+      @user.name = "example　Name"
+      assert_not @user.valid?, "example　Name should be invalid"
+  end
+  
+  test "name should be unique" do
+    duplicate_user = @user.dup
+    duplicate_user.name = @user.name.upcase
+    duplicate_user.email = "user2@example.com"
+    @user.save
+    assert_not duplicate_user.valid?
+  end
+  
   test "email addresses should be unique" do
     duplicate_user = @user.dup
+    duplicate_user.name = "Example User2"
     duplicate_user.email = @user.email.upcase
     @user.save
     assert_not duplicate_user.valid?
@@ -100,6 +122,7 @@ class UserTest < ActiveSupport::TestCase
     michael = users(:michael)
     archer  = users(:archer)
     lana    = users(:lana)
+    melisa  = users(:melisa)
     # フォローしているユーザーの投稿を確認
     lana.microposts.each do |post_following|
       assert michael.feed.include?(post_following)
@@ -111,6 +134,11 @@ class UserTest < ActiveSupport::TestCase
     # フォローしていないユーザーの投稿を確認
     archer.microposts.each do |post_unfollowed|
       assert_not michael.feed.include?(post_unfollowed)
+    end
+    # 返信を確認
+    melisa.microposts.create!(content: "@" + michael.name + " reply test", in_reply_to: michael.id)
+    melisa.microposts.each do |post_replay|
+      assert michael.feed.include?(post_replay)
     end
   end
 end

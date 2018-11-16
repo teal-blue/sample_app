@@ -3,6 +3,15 @@ class MicropostsController < ApplicationController
   before_action :correct_user,   only: :destroy
 
   def create
+    if (micropost_params.content.include("@"))
+      index_at = micropost_params.content.index("@")+1
+      index_space = micropost_params.content.index(" ",index_at) || micropost_params.content.count
+      reply = micropost_params.content.slice(index_at..index_space)
+      reply_user = User.find_by(name: reply)
+      if (!reply_user.nil)
+        micropost_params.in_reply_to = reply_user.id
+      end
+    end
     @micropost = current_user.microposts.build(micropost_params)
     if @micropost.save
       flash[:success] = "Micropost created!"
