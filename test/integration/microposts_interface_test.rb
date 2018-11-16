@@ -50,4 +50,22 @@ class MicropostsInterfaceTest < ActionDispatch::IntegrationTest
     get root_path
     assert_match "1 micropost", response.body
   end
+  
+  test "micropost reply" do
+    log_in_as(@user)
+    other_user = users(:melisa)
+    get root_path
+    # 返信を行う
+    content = "@" + other_user.name + " This micropost really ties the room together"
+    picture = fixture_file_upload('test/fixtures/rails.png', 'image/png')
+    assert_difference 'Micropost.count', 1 do
+      post microposts_path, params: { micropost: { content: content,
+                                      picture: picture  } }
+    end
+    # in_reply_toの中身が作られていることを確認
+    log_in_as(other_user)
+    first_micropost = @user.microposts.paginate(page: 1).first
+    assert first_micropost[:in_reply_to] == other_user.id
+    
+  end
 end
